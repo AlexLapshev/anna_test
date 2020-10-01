@@ -59,9 +59,3 @@ async def get_current_user(token: str = Depends(oauth2_scheme), pool: Pool = Dep
     if user is None:
         raise credentials_exception
     return user
-
-
-async def get_current_active_user(current_user: dict = Depends(get_current_user)) -> dict:
-    if current_user.get('disabled'):
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
