@@ -6,6 +6,8 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
+
+from api.auth.token import token
 from api.tasks import tasks
 
 logging.config.fileConfig(Path.joinpath(Path(__file__).parent, 'logging.conf'), disable_existing_loggers=False)
@@ -27,6 +29,7 @@ def create_app():
     )
 
     app.include_router(tasks, prefix='/api/v1/tasks', tags=['tasks'])
+    app.include_router(token, prefix='/api/v1/users', tags=['token'])
     app.router.add_event_handler("startup", create_startup_hook(app))
     return app
 

@@ -13,12 +13,12 @@ from api.utils import check_updates, CheckUpdates
 tasks = APIRouter()
 
 
-@tasks.get('/', response_model=List[Task])
+@tasks.get('', response_model=List[Task])
 async def user_tasks(date: date = None, status: str = None, order: str = 'desc', pool: Pool = Depends(get_connection)):
     if order not in ['asc', 'desc']:
         return JSONResponse(content={'error': 'incorrect query parameter order'})
     if status or date:
-        return await TasksCRUD(pool).select_task_with_queries(status, date, order)
+        return await TasksCRUD(pool).select_tasks_with_queries(status, date, order)
     return await TasksCRUD(pool).select_all_tasks(order)
 
 

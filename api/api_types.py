@@ -22,3 +22,12 @@ class TaskChange(BaseModel):
     task_description: Optional[str]
     task_finish: Optional[datetime]
     task_status: Optional[int]
+
+
+class TokenMeta(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenDataMeta(BaseModel):
+    username: Optional[str] = None

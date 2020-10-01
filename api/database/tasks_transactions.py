@@ -25,7 +25,7 @@ class TasksCRUD:
         select * from tasks order by task_created {};
         ''', order)
 
-    async def select_task_with_queries(self, status, date, order) -> list:
+    async def select_tasks_with_queries(self, status, date, order) -> list:
         main_query = '''
             select task_name, task_description, task_finish, task_id, task_created, user_id, status_name as task_status
             from tasks
