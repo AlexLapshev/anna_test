@@ -17,17 +17,14 @@ class Task(BaseTask):
     task_status: str
 
 
-class TaskChange(BaseModel):
-    task_name: Optional[str]
-    task_description: Optional[str]
-    task_finish: Optional[datetime]
-    task_status: Optional[int]
+class TaskChange(BaseTask):
+    task_status: Optional[str]
 
 
-class TokenMeta(BaseModel):
+class Token(BaseModel):
     access_token: str
     token_type: str
 
 
-class TokenDataMeta(BaseModel):
+class TokenData(BaseModel):
     username: Optional[str] = None

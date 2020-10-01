@@ -9,7 +9,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
 from api.auth.jwt_work import decode_token
-from api.api_types import TokenDataMeta
+from api.api_types import TokenData
 from api.database.database_transactions import DatabaseTransactions
 from api.database.database_connection import get_connection
 
@@ -49,7 +49,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), pool: Pool = Dep
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-        token_data = TokenDataMeta(username=username)
+        token_data = TokenData(username=username)
     except ExpiredSignatureError as exc:
         raise HTTPException(status_code=401, detail="Expired token", headers={"WWW-Authenticate": "Bearer"})
     except JWTError:

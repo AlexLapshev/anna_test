@@ -77,3 +77,12 @@ class TasksCRUD:
             ''', updates.task_status, updates.task_name, updates.task_description, updates.task_finish, task_id)
         else:
             raise ValueError('foreign task')
+
+
+class StatusCRUD:
+    def __init__(self, pool: Pool):
+        self.pool = pool
+
+    async def all_statuses(self):
+        return await DatabaseTransactions(self.pool).select_multiple('''
+        select status_name from status''')

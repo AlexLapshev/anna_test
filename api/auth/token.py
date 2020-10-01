@@ -7,7 +7,7 @@ from fastapi import Depends, status, HTTPException, APIRouter, Form
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette.responses import JSONResponse
 
-from api.api_types import TokenMeta
+from api.api_types import Token
 from api.auth.auth import authenticate_user, hash_password
 from api.auth.jwt_work import create_access_token
 from api.database.database_connection import get_connection
@@ -34,7 +34,7 @@ async def register(username: str = Form(...), password: str = Form(...), passwor
         return JSONResponse(content={'error': 'user with this username is already exist'}, status_code=409)
 
 
-@token.post("/token", response_model=TokenMeta)
+@token.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(),
                 pool: Pool = Depends(get_connection)) -> JSONResponse:
     if user := await authenticate_user(form_data.username, form_data.password, pool):

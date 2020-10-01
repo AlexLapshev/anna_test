@@ -26,7 +26,7 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.users (
     user_id serial primary key,
-    username character varying(255) unique,
+    username character varying(15) unique,
     hashed_password character varying(255)
 );
 
@@ -43,7 +43,7 @@ ALTER TABLE public.status OWNER TO anna_test_user;
 
 CREATE TABLE public.tasks (
     task_id serial primary key,
-    task_name character varying(255),
+    task_name character varying(25),
     task_description character varying(255),
     task_created timestamp,
     task_status integer,

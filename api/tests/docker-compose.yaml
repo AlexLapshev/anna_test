@@ -1,0 +1,13 @@
+version: "3.3"
+services:
+  db:
+    image: postgres:latest
+    container_name: anna_test_db
+    environment:
+      POSTGRES_DB: anna_test_db
+      POSTGRES_USER: anna_test_user
+      POSTGRES_PASSWORD: 123456
+    volumes:
+      - ./initdb.sql:/docker-entrypoint-initdb.d/dump.sql:ro
+    ports:
+      - 5432:5432
