@@ -43,7 +43,7 @@ ALTER TABLE public.status OWNER TO anna_test_user;
 
 CREATE TABLE public.tasks (
     task_id serial primary key,
-    task_name character varying(255) unique,
+    task_name character varying(255),
     task_description character varying(255),
     task_created timestamp,
     task_status integer,

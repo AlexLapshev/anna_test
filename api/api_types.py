@@ -21,3 +21,4 @@ class TaskChange(BaseModel):
     task_name: Optional[str]
     task_description: Optional[str]
     task_finish: Optional[datetime]
+    task_status: Optional[int]

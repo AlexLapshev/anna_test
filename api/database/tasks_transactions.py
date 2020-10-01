@@ -31,18 +31,20 @@ class TasksCRUD:
             from tasks
             join status ON tasks.task_status=status.status_id
             '''
-        logger.info('selecting tasks ordered by date')
         if date and status:
+            logger.info('selecting tasks filtered by date and status')
             return await DatabaseTransactions(self.pool).select_multiple(main_query + '''
             where date(task_finish) = '{}' and lower(status.status_name) = lower('{}')
             order by task_finish {};
             ''', date, status, order)
-        if status:
+        elif status:
+            logger.info('selecting tasks filtered by status')
             return await DatabaseTransactions(self.pool).select_multiple(main_query + '''
             where lower(status.status_name) = lower('{}')
             order by task_finish {};
             ''', status, order)
         else:
+            logger.info('selecting tasks filtered by date')
             return await DatabaseTransactions(self.pool).select_multiple(main_query + '''
             where date(task_finish) = '{}'
             order by task_finish {};
@@ -51,6 +53,11 @@ class TasksCRUD:
     async def create_task(self, task_name: str, task_description: str, task_finish: datetime) -> None:
         logger.info(f'creating task with name: {task_name}')
         task_created = datetime.now().strftime("%Y-%m-%d %H:%M")
+        if await DatabaseTransactions(self.pool).select('''
+        select * from tasks 
+        where user_id={} and task_name='{}';
+        ''', 1, task_name):
+            raise ValueError('task name must be unique')
         await DatabaseTransactions(self.pool).execute('''
         insert into tasks (task_name, task_description, task_created, task_finish, task_status, user_id) 
         values ('{}', '{}', '{}', '{}', {}, {});''', task_name, task_description, task_created,
@@ -58,6 +65,8 @@ class TasksCRUD:
 
     async def update_task(self, task_id: int, updates: TaskChange):
         logger.info('updating task')
-        await DatabaseTransactions(self.pool).execute(
-            '''update tasks set task_name = '{}', task_description = '{}', task_finish = '{}' where task_id={};''',
-            updates.task_name, updates.task_description, updates.task_finish, task_id)
+        await DatabaseTransactions(self.pool).execute('''
+        update tasks 
+        set task_status = {}, task_name = '{}', task_description = '{}', task_finish = '{}' 
+        where task_id={};
+        ''', updates.task_status, updates.task_name, updates.task_description, updates.task_finish, task_id)
