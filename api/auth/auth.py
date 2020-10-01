@@ -15,7 +15,7 @@ from api.database.database_connection import get_connection
 
 pwd_context = CryptContext(schemes=["sha512_crypt"], deprecated="auto")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/token")
 
 logger = logging.getLogger(__name__)
 

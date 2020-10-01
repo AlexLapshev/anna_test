@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 
+from asyncpg import UniqueViolationError
 from asyncpg.pool import Pool
 from fastapi import Depends, status, HTTPException, APIRouter, Form
 from fastapi.security import OAuth2PasswordRequestForm
@@ -26,8 +27,11 @@ async def register(username: str = Form(...), password: str = Form(...), passwor
     if password != password2:
         return JSONResponse(content={'error': "passwords don't match"}, status_code=401)
     hashed_password = hash_password(password)
-    await UserCRUD(pool).create_new_user(username, hashed_password)
-    return {username: hashed_password}
+    try:
+        await UserCRUD(pool).create_new_user(username, hashed_password)
+        return JSONResponse(content={'result': 'succesfully register'}, status_code=201)
+    except UniqueViolationError as e:
+        return JSONResponse(content={'error': 'user with this username is already exist'}, status_code=409)
 
 
 @token.post("/token", response_model=TokenMeta)
