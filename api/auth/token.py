@@ -21,15 +21,15 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60*24*30
 async def register(username: str = Form(...), password: str = Form(...), password2: str = Form(...),
                    pool: Pool = Depends(get_connection)):
     if len(password) < 8:
-        return JSONResponse(content={'detail': 'password is too short'}, status_code=401)
+        raise HTTPException(detail='password is too short', status_code=401)
     if password != password2:
-        return JSONResponse(content={'detail': "passwords don't match"}, status_code=401)
+        raise HTTPException(detail="passwords don't match", status_code=401)
     hashed_password = hash_password(password)
     try:
         await UserCRUD(pool).create_new_user(username, hashed_password)
         return JSONResponse(content={'result': 'succesfully register'}, status_code=201)
     except UniqueViolationError as e:
-        return JSONResponse(content={'detail': 'user with this username already exist'}, status_code=409)
+        raise HTTPException(detail='user with this username already exist', status_code=409)
 
 
 @token.post("/token", response_model=Token)

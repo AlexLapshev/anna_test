@@ -88,23 +88,25 @@ def test_no_tasks(client, access_token):
     assert response.status_code == 204
 
 
-# @pytest.mark.parametrize('task_name, task_description, task_finish, status_code', [
-#     ("задача в тестах", "описание", "2020-10-01 00:00", 201),
-#     ("задача в тестах", "описание", "2020-10-01 00:00", 409),
-#     ("a" * 30, "описание", "2020-10-01 00:00", 400),
-#     ("задача в тестах2", "a"*256, "2020-10-01 00:00", 400),
-#     ("", "описание", "2020-10-01 00:00", 400),
-#     ("задача в тестах2", "", "2020-10-01 00:00", 201),
-#     ("задача в тестах2", "", "", 422),
-# ])
-# def test_update_task(client, access_token, task_name, task_description, task_finish, status_code):
-#     response = client.post(
-#         test_url,
-#         headers={'Authorization': 'Bearer ' + access_token},
-#         json={
-#             "task_name": task_name,
-#             "task_description": task_description,
-#             "task_finish": task_finish
-#         }
-#     )
-#     assert response.status_code == status_code
+@pytest.mark.parametrize('task_name, task_description, task_finish, status_code', [
+    ("задача в тестах", "описание", "2020-10-01 00:00", 201),
+    ("задача в тестах2", "описание", None, 201),
+    ("задача в тестах", "описание", "2020-10-01 00:00", 409),
+    (None, "описание", "2020-10-01 00:00", 422),
+    ("", "описание", "2020-10-01 00:00", 400),
+    ("a" * 30, "описание", "2020-10-01 00:00", 400),
+    ("задача в тестах2", "", "2020-10-01 00:00", 400),
+    ("задача в тестах2", None, "", 422),
+    ("задача в тестах2", "a"*256, "2020-10-01 00:00", 400),
+])
+def test_update_task(client, access_token, task_name, task_description, task_finish, status_code):
+    response = client.post(
+        test_url,
+        headers={'Authorization': 'Bearer ' + access_token},
+        json={
+            "task_name": task_name,
+            "task_description": task_description,
+            "task_finish": task_finish
+        }
+    )
+    assert response.status_code == status_code
