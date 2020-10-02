@@ -1,4 +1,7 @@
+import asyncio
+import asyncpg
 import pytest
+
 from urllib.parse import quote
 
 test_url = "/api/v1/tasks"
@@ -52,12 +55,14 @@ def test_user_tasks_without_order(client, access_token, date, status, status_cod
 
 @pytest.mark.parametrize('task_name, task_description, task_finish, status_code', [
     ("задача в тестах", "описание", "2020-10-01 00:00", 201),
-    ("задача в тестах", "описание", "2020-10-01 00:00", 409),
-    ("a" * 30, "описание", "2020-10-01 00:00", 400),
-    ("задача в тестах2", "a"*256, "2020-10-01 00:00", 400),
+    ("задача в тестах2", "description", None, 201),
     ("", "описание", "2020-10-01 00:00", 400),
-    ("задача в тестах2", "", "2020-10-01 00:00", 201),
-    ("задача в тестах2", "", "", 422),
+    (None, "описание", "2020-10-01 00:00", 422),
+    ("a" * 30, "описание", "2020-10-01 00:00", 400),
+    ("задача в тестах2", "", "2020-10-01 00:00", 400),
+    ("задача в тестах2", None, "2020-10-01 00:00", 422),
+    ("задача в тестах2", "a" * 256, "2020-10-01 00:00", 400),
+    ("задача в тестах", "описание", "2020-10-01 00:00", 409),
 ])
 def test_create_task(client, access_token, task_name, task_description, task_finish, status_code):
     response = client.post(
@@ -70,3 +75,36 @@ def test_create_task(client, access_token, task_name, task_description, task_fin
         }
     )
     assert response.status_code == status_code
+
+
+def test_no_tasks(client, access_token):
+    connection = asyncio.get_event_loop().run_until_complete(
+        asyncpg.connect(host='localhost', database='anna_test_db', user='anna_test_user', password='123456'))
+    asyncio.get_event_loop().run_until_complete(connection.execute('''delete from tasks where user_id = 1'''))
+    response = client.get(
+        test_url,
+        headers={'Authorization': 'Bearer ' + access_token},
+    )
+    assert response.status_code == 204
+
+
+# @pytest.mark.parametrize('task_name, task_description, task_finish, status_code', [
+#     ("задача в тестах", "описание", "2020-10-01 00:00", 201),
+#     ("задача в тестах", "описание", "2020-10-01 00:00", 409),
+#     ("a" * 30, "описание", "2020-10-01 00:00", 400),
+#     ("задача в тестах2", "a"*256, "2020-10-01 00:00", 400),
+#     ("", "описание", "2020-10-01 00:00", 400),
+#     ("задача в тестах2", "", "2020-10-01 00:00", 201),
+#     ("задача в тестах2", "", "", 422),
+# ])
+# def test_update_task(client, access_token, task_name, task_description, task_finish, status_code):
+#     response = client.post(
+#         test_url,
+#         headers={'Authorization': 'Bearer ' + access_token},
+#         json={
+#             "task_name": task_name,
+#             "task_description": task_description,
+#             "task_finish": task_finish
+#         }
+#     )
+#     assert response.status_code == status_code

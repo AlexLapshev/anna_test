@@ -1,7 +1,5 @@
-import logging
 from api.database.database_transactions import DatabaseTransactions
-
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 
 class UserCRUD:

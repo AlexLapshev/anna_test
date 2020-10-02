@@ -1,12 +1,12 @@
-import logging
+from loguru import logger
 
-from datetime import datetime
 from asyncpg.pool import Pool
+from datetime import datetime
+from fastapi import HTTPException
 
-from api.api_types import TaskChange
+
+from api.api_types import TaskChange, BaseTask
 from api.database.database_transactions import DatabaseTransactions
-
-logger = logging.getLogger(__name__)
 
 
 class TasksCRUD:
@@ -15,14 +15,20 @@ class TasksCRUD:
     def __init__(self, pool: Pool):
         self.pool = pool
 
-    async def select_one_task(self, task_id: int) -> dict:
-        logger.info(f'selecting task with id: {task_id}')
-        return await DatabaseTransactions(self.pool).select('''select * from tasks where task_id={};''', task_id)
+    async def select_one_task(self, task_name: str, user_id: int) -> dict:
+        logger.debug(f'selecting task with name: {task_name}')
+        return await DatabaseTransactions(self.pool).select('''
+        select * from tasks where task_name='{}' and user_id = {};
+        ''', task_name, user_id)
 
     async def select_all_tasks(self, order: str, user_id: int) -> list:
-        logger.info('selecting all task')
+        logger.debug('selecting all task')
         return await DatabaseTransactions(self.pool).select_multiple('''
-        select * from tasks where user_id = {} order by task_created {};
+        select task_name, task_description, task_finish, task_id, task_created, user_id, status_name as task_status
+            from tasks
+            join status ON tasks.task_status=status.status_id
+            where user_id = {} 
+            order by task_created {};
         ''', user_id, order)
 
     async def select_tasks_with_queries(self, status: str, date: datetime, order: str, user_id: int) -> list:
@@ -34,55 +40,47 @@ class TasksCRUD:
             where user_id = {} and 
             '''
         if date and status:
-            logger.info('selecting tasks filtered by date and status')
+            logger.debug('selecting tasks filtered by date and status')
             return await DatabaseTransactions(self.pool).select_multiple(main_query + '''
             date(task_finish) = '{}' and lower(status.status_name) = lower('{}')
             order by task_finish {};
             ''', user_id, date, status, order)
         elif status:
-            logger.info('selecting tasks filtered by status')
+            logger.debug('selecting tasks filtered by status')
             return await DatabaseTransactions(self.pool).select_multiple(main_query + '''
             lower(status.status_name) = lower('{}')
             order by task_finish {};
             ''', user_id, status, order)
         else:
-            logger.info('selecting tasks filtered by date')
+            logger.debug('selecting tasks filtered by date')
             return await DatabaseTransactions(self.pool).select_multiple(main_query + '''
             date(task_finish) = '{}'
             order by task_finish {};
             ''', user_id, date, order)
 
-    async def create_task(self, task_name: str, task_description: str, task_finish: datetime, user_id: int) -> None:
-        logger.info(f'creating task with name: {task_name}')
+    async def create_task(self, user_id: int, task: BaseTask) -> None:
+        base_query = "insert into tasks (task_name, task_description, task_created, task_finish, task_status, user_id) "
+        logger.debug(f'creating task with name: {task.task_name}')
+        if await self.select_one_task(task.task_name, user_id):
+            raise HTTPException(status_code=409, detail='user already has task with this name')
         task_created = datetime.now().strftime("%Y-%m-%d %H:%M")
-        if await DatabaseTransactions(self.pool).select('''
-        select * from tasks 
-        where user_id={} and task_name='{}';
-        ''', user_id, task_name):
-            raise ValueError('user already has task with this name')
-        await DatabaseTransactions(self.pool).execute('''
-        insert into tasks (task_name, task_description, task_created, task_finish, task_status, user_id) 
-        values ('{}', '{}', '{}', '{}', {}, {});''', task_name, task_description, task_created,
-                                                      task_finish.strftime("%Y-%m-%d %H:%M"), 1, user_id)
-
-    async def update_task(self, task_id: int, updates: TaskChange, user_id: int):
-        logger.info('updating task')
-        user_task_ids = [task['task_id'] for task in await self.select_all_tasks('desc', user_id)]
-        print(user_task_ids)
-        if task_id in user_task_ids:
-            await DatabaseTransactions(self.pool).execute('''
-            update tasks 
-            set task_status = {}, task_name = '{}', task_description = '{}', task_finish = '{}' 
-            where task_id={};
-            ''', updates.task_status, updates.task_name, updates.task_description, updates.task_finish, task_id)
+        if task.task_finish:
+            logger.debug(f'formatting date {task.task_finish}')
+            task_finish = task.task_finish.strftime("%Y-%m-%d %H:%M")
+            quotes = "values ('{}', '{}', '{}', '{}', {}, {});"
         else:
-            raise ValueError('foreign task')
+            task_finish = 'null'
+            quotes = "values ('{}', '{}', '{}', {}, {}, {});"
+        await DatabaseTransactions(self.pool).execute(base_query + quotes, task.task_name,
+                                                      task.task_description, task_created,
+                                                      task_finish, 1, user_id)
 
-
-class StatusCRUD:
-    def __init__(self, pool: Pool):
-        self.pool = pool
-
-    async def all_statuses(self):
-        return await DatabaseTransactions(self.pool).select_multiple('''
-        select status_name from status''')
+    async def update_task(self, task_id: int, updates: TaskChange):
+        logger.info('updating task')
+        base_query = '''update tasks set task_status = {}, task_name = '{}', task_description = '{}', task_finish = '''
+        if updates.task_finish:
+            quotes = "'{}' where task_id={};"
+        else:
+            updates.task_finish = 'null'
+            quotes = "{} where task_id={};"
+        await DatabaseTransactions(self.pool).execute(base_query + quotes, updates.task_status, updates.task_name, updates.task_description, updates.task_finish, task_id)

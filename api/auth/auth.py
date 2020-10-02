@@ -1,9 +1,7 @@
-import logging
-
-from passlib.context import CryptContext
-from jose import JWTError, ExpiredSignatureError
-
 from asyncpg.pool import Pool
+from jose import JWTError, ExpiredSignatureError
+from passlib.context import CryptContext
+
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -17,7 +15,6 @@ pwd_context = CryptContext(schemes=["sha512_crypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/token")
 
-logger = logging.getLogger(__name__)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

@@ -8,6 +8,6 @@ services:
       POSTGRES_USER: anna_test_user
       POSTGRES_PASSWORD: 123456
     volumes:
-      - ./initdb.sql:/docker-entrypoint-initdb.d/dump.sql:ro
+      - ./initdb.sql:/docker-entrypoint-initdb.d/dump.sql
     ports:
       - 5432:5432

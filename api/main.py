@@ -1,16 +1,12 @@
 import asyncpg
-import logging.config
 import uvicorn
 
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pathlib import Path
 
 from api.auth.token import token
 from api.tasks import tasks
-
-logging.config.fileConfig(Path.joinpath(Path(__file__).parent, 'logging.conf'), disable_existing_loggers=False)
 
 
 def create_app():

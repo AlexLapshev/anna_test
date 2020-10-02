@@ -26,8 +26,8 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.users (
     user_id serial primary key,
-    username character varying(15) unique,
-    hashed_password character varying(255)
+    username character varying(15) unique not null,
+    hashed_password character varying(255) not null
 );
 
 
