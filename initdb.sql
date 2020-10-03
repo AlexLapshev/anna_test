@@ -33,12 +33,9 @@ CREATE TABLE public.users (
 
 ALTER TABLE public.users OWNER TO anna_test_user;
 
-CREATE TABLE public.status (
-    status_id serial primary key,
-    status_name character varying(20) unique
-);
+CREATE TYPE public.status AS ENUM ('новая', 'запланированная', 'в работе', 'завершённая');
 
-ALTER TABLE public.status OWNER TO anna_test_user;
+ALTER TYPE public.status OWNER TO anna_test_user;
 
 
 CREATE TABLE public.tasks (
@@ -46,7 +43,7 @@ CREATE TABLE public.tasks (
     task_name character varying(25),
     task_description character varying(255),
     task_created timestamp,
-    task_status integer,
+    task_status public.status,
     task_finish timestamp,
     user_id integer
 );
@@ -71,23 +68,14 @@ ALTER TABLE ONLY public.tasks_audit
     ADD CONSTRAINT user_id_audit_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id);
 
 ALTER TABLE ONLY public.tasks
-    ADD CONSTRAINT task_status_fkey FOREIGN KEY (task_status) REFERENCES public.status(status_id);
-
-ALTER TABLE ONLY public.tasks
     ADD CONSTRAINT task_user_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id);
 
-insert into public.status (status_name)
-values
-('Новая'),
-('Запланированная'),
-('В Работе'),
-('Завершённая');
 
 insert into public.users (username, hashed_password)
 values ('test_user', 'secret_password');
 
 insert into public.tasks (task_name, task_description, task_created, task_finish, task_status, user_id)
-values ('Сделать тестовое', 'Тестовое на fastapi', '2020-09-30 21:00', '2020-10-03 21:00',1, 1);
+values ('Сделать тестовое', 'Тестовое на fastapi', '2020-09-30 21:00', '2020-10-03 21:00','новая', 1);
 
 insert into public.tasks (task_name, task_description, task_created, task_finish, task_status, user_id)
-values ('Сделать тестовое2', 'Тестовое на fastapi', '2021-09-30 21:00', '2020-10-03 21:00',1, 1);
+values ('Сделать тестовое2', 'Тестовое на fastapi', '2021-09-30 21:00', '2020-10-03 21:00','в работе', 1);

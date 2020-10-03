@@ -30,9 +30,8 @@ class TasksCRUD:
     async def select_all_tasks(self, order: str, user_id: int) -> list:
         logger.debug('selecting all task')
         return await DatabaseTransactions(self.pool).select_multiple('''
-        select task_name, task_description, task_finish, task_id, task_created, user_id, status_name as task_status
+        select task_name, task_description, task_finish, task_id, task_created, user_id, task_status
             from tasks
-            join status ON tasks.task_status=status.status_id
             where user_id = {} 
             order by task_created {};
         ''', user_id, order)
@@ -40,23 +39,22 @@ class TasksCRUD:
     async def select_tasks_with_queries(self, status: str, date: datetime, order: str, user_id: int) -> list:
         logger.debug('user_id: ', user_id)
         main_query = '''
-            select task_name, task_description, task_finish, task_id, task_created, user_id, status_name as task_status
+            select task_name, task_description, task_finish, task_id, task_created, user_id, task_status
             from tasks
-            join status ON tasks.task_status=status.status_id
             where user_id = {} and 
             '''
         if date and status:
             logger.debug('selecting tasks filtered by date and status')
             return await DatabaseTransactions(self.pool).select_multiple(main_query + '''
-            date(task_finish) = '{}' and lower(status.status_name) = lower('{}')
+            date(task_finish) = '{}' and task_status = '{}'
             order by task_finish {};
-            ''', user_id, date, status, order)
+            ''', user_id, date, status.lower(), order)
         elif status:
             logger.debug('selecting tasks filtered by status')
             return await DatabaseTransactions(self.pool).select_multiple(main_query + '''
-            lower(status.status_name) = lower('{}')
+            task_status = '{}'
             order by task_finish {};
-            ''', user_id, status, order)
+            ''', user_id, status.lower(), order)
         else:
             logger.debug('selecting tasks filtered by date')
             return await DatabaseTransactions(self.pool).select_multiple(main_query + '''
@@ -73,13 +71,14 @@ class TasksCRUD:
         if task.task_finish:
             logger.debug(f'formatting date {task.task_finish}')
             task_finish = task.task_finish.strftime("%Y-%m-%d %H:%M")
-            quotes = "values ('{}', '{}', '{}', '{}', {}, {});"
+            quotes = "values ('{}', '{}', '{}', '{}', '{}', {});"
         else:
             task_finish = 'null'
-            quotes = "values ('{}', '{}', '{}', {}, {}, {});"
+            quotes = "values ('{}', '{}', '{}', {}, '{}', {});"
+        logger.debug(base_query + quotes)
         await DatabaseTransactions(self.pool).execute(base_query + quotes, task.task_name,
                                                       task.task_description, task_created,
-                                                      task_finish, 1, user_id)
+                                                      task_finish, 'новая', user_id)
 
     async def update_task(self, task_id: int, updates: dict):
         logger.info('updating task')
@@ -100,8 +99,19 @@ class TasksCRUD:
     async def update_audit(self, task_id: int, user_id: int, updates: dict):
         logger.debug(f'update params: {updates}')
         for k, v in updates.items():
-            date_change = datetime.now()
+            date_change = datetime.now().strftime("%Y-%m-%d %H:%M")
             await DatabaseTransactions(self.pool).execute('''
             insert into tasks_audit (task_id, user_id, date_change, task_operation, prev_value) 
             values ({}, {}, '{}', '{}', '{}');
             ''', task_id, user_id, date_change, k, str(v))
+
+    async def task_changes(self, task_id):
+        return await DatabaseTransactions(self.pool).select_multiple('''
+        select * from tasks_audit where task_id = {};
+        ''', task_id)
+
+    async def task_changes_with_query(self, task_id: int, operation: str):
+        logger.debug(f'filtering with query {operation}')
+        return await DatabaseTransactions(self.pool).select_multiple('''
+        select * from tasks_audit where task_id = {} and task_operation = '{}';
+        ''', task_id, operation)
