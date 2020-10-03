@@ -20,6 +20,7 @@ iniconfig==1.0.1
 ipaddr==2.2.0
 jose==1.0.0
 lockfile==0.12.2
+loguru==0.5.3
 msgpack==0.6.2
 packaging==20.3
 passlib==1.7.2

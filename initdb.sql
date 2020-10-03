@@ -1,10 +1,3 @@
---
--- PostgreSQL database dump
---
-
--- Dumped from database version 12.3 (Debian 12.3-1.pgdg100+1)
--- Dumped by pg_dump version 12.3 (Debian 12.3-1.pgdg100+1)
-
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -19,10 +12,6 @@ SET row_security = off;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
-
---
--- Name: artists; Type: TABLE; Schema: public; Owner: play_backend_user
---
 
 CREATE TABLE public.users (
     user_id serial primary key,
@@ -69,13 +58,3 @@ ALTER TABLE ONLY public.tasks_audit
 
 ALTER TABLE ONLY public.tasks
     ADD CONSTRAINT task_user_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id);
-
-
-insert into public.users (username, hashed_password)
-values ('test_user', 'secret_password');
-
-insert into public.tasks (task_name, task_description, task_created, task_finish, task_status, user_id)
-values ('Сделать тестовое', 'Тестовое на fastapi', '2020-09-30 21:00', '2020-10-03 21:00','новая', 1);
-
-insert into public.tasks (task_name, task_description, task_created, task_finish, task_status, user_id)
-values ('Сделать тестовое2', 'Тестовое на fastapi', '2021-09-30 21:00', '2020-10-03 21:00','в работе', 1);

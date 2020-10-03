@@ -12,6 +12,14 @@ services:
       - ./postgres/pgdata:/var/lib/postgresql/data
     ports:
       - 5432:5432
+  app:
+    image: alexlapshev/anna_test:latest
+    container_name: app
+    ports:
+      - "1984:1984"
+    command: bash -c "python -m api.main"
+    depends_on:
+      - db
 volumes:
   pgdata:
 

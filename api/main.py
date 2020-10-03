@@ -32,7 +32,7 @@ def create_app():
 
 def create_startup_hook(app: FastAPI):
     async def startup_hook() -> None:
-        app.state.pool = await asyncpg.create_pool(dsn="postgres://anna_test_user:123456@0.0.0.0:5432/anna_test_db")
+        app.state.pool = await asyncpg.create_pool(dsn="postgres://anna_test_user:123456@db:5432/anna_test_db")
     return startup_hook
 
 
