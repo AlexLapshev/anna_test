@@ -18,7 +18,7 @@ class StatusCRUD:
 
 class TaskValidation:
     """Валидация данных задач"""
-    def __init__(self, pool: Pool):
+    def __init__(self, pool: Pool = None):
         self.pool = pool
 
     async def get_task_params(self, status: str, order: str) -> None:
@@ -37,3 +37,18 @@ class TaskValidation:
             pass
         else:
             raise HTTPException(detail="task doesn't belong to user", status_code=403)
+
+    @staticmethod
+    def task_update_params(task: dict, updates: TaskChange) -> dict:
+        params_to_update = {}
+        if task['task_status'] != updates.task_status:
+            params_to_update['task_status'] = updates.task_status
+        if task['task_finish'].strftime("%Y-%m-%d %H:%M") != updates.task_finish:
+            params_to_update['task_finish'] = updates.task_finish.strftime("%Y-%m-%d %H:%M")
+        if task['task_name'] != updates.task_name:
+            params_to_update['task_name'] = updates.task_name
+        if task['task_description'] != updates.task_description:
+            params_to_update['task_description'] = updates.task_description
+        logger.debug(f'params to update: {params_to_update}')
+        return params_to_update
+

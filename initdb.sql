@@ -51,7 +51,24 @@ CREATE TABLE public.tasks (
     user_id integer
 );
 
+
 ALTER TABLE public.tasks OWNER TO anna_test_user;
+
+
+CREATE TABLE public.tasks_audit (
+    audit_id serial primary key,
+    task_id integer,
+    user_id integer,
+    task_operation character varying(25),
+    prev_value character varying(255),
+    date_change timestamp
+);
+
+ALTER TABLE ONLY public.tasks_audit
+    ADD CONSTRAINT task_id_audit_fkey FOREIGN KEY (task_id) REFERENCES public.tasks(task_id);
+
+ALTER TABLE ONLY public.tasks_audit
+    ADD CONSTRAINT user_id_audit_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id);
 
 ALTER TABLE ONLY public.tasks
     ADD CONSTRAINT task_status_fkey FOREIGN KEY (task_status) REFERENCES public.status(status_id);

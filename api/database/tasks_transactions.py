@@ -15,7 +15,13 @@ class TasksCRUD:
     def __init__(self, pool: Pool):
         self.pool = pool
 
-    async def select_one_task(self, task_name: str, user_id: int) -> dict:
+    async def select_one_task_by_id(self, task_id: int, user_id) -> dict:
+        logger.debug(f'selecting task with name: {task_id}')
+        return await DatabaseTransactions(self.pool).select('''
+        select * from tasks where task_id='{}' and user_id = {};
+        ''', task_id, user_id)
+
+    async def select_one_task_by_name(self, task_name: str, user_id: int) -> dict:
         logger.debug(f'selecting task with name: {task_name}')
         return await DatabaseTransactions(self.pool).select('''
         select * from tasks where task_name='{}' and user_id = {};
@@ -61,7 +67,7 @@ class TasksCRUD:
     async def create_task(self, user_id: int, task: BaseTask) -> None:
         base_query = "insert into tasks (task_name, task_description, task_created, task_finish, task_status, user_id) "
         logger.debug(f'creating task with name: {task.task_name}')
-        if await self.select_one_task(task.task_name, user_id):
+        if await self.select_one_task_by_name(task.task_name, user_id):
             raise HTTPException(status_code=409, detail='user already has task with this name')
         task_created = datetime.now().strftime("%Y-%m-%d %H:%M")
         if task.task_finish:
@@ -75,12 +81,27 @@ class TasksCRUD:
                                                       task.task_description, task_created,
                                                       task_finish, 1, user_id)
 
-    async def update_task(self, task_id: int, updates: TaskChange):
+    async def update_task(self, task_id: int, updates: dict):
         logger.info('updating task')
-        base_query = '''update tasks set task_status = {}, task_name = '{}', task_description = '{}', task_finish = '''
-        if updates.task_finish:
-            quotes = "'{}' where task_id={};"
-        else:
-            updates.task_finish = 'null'
-            quotes = "{} where task_id={};"
-        await DatabaseTransactions(self.pool).execute(base_query + quotes, updates.task_status, updates.task_name, updates.task_description, updates.task_finish, task_id)
+        logger.debug(updates)
+        base_query = 'update tasks set '
+        for k, v in updates.items():
+            if type(v) == str:
+                string = k + " = '{}',"
+            else:
+                string = k + ' = {},'
+            if not v:
+                updates[k] = 'null'
+            base_query += string
+        base_query = base_query[:-1]
+        base_query += " where task_id={};"
+        await DatabaseTransactions(self.pool).execute(base_query, *updates.values(), task_id)
+
+    async def update_audit(self, task_id: int, user_id: int, updates: dict):
+        logger.debug(f'update params: {updates}')
+        for k, v in updates.items():
+            date_change = datetime.now()
+            await DatabaseTransactions(self.pool).execute('''
+            insert into tasks_audit (task_id, user_id, date_change, task_operation, prev_value) 
+            values ({}, {}, '{}', '{}', '{}');
+            ''', task_id, user_id, date_change, k, str(v))

@@ -2,7 +2,8 @@ from datetime import date
 from typing import List
 
 from asyncpg.pool import Pool
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from loguru import logger
 from starlette.responses import JSONResponse
 
 from api.api_types import Task, BaseTask, TaskChange
@@ -41,6 +42,10 @@ async def create_task(task: BaseTask, pool: Pool = Depends(get_connection),
 async def change_task(task_id: int, updates: TaskChange, pool: Pool = Depends(get_connection),
                       current_user: dict = Depends(get_current_user)):
     user_id = current_user['user_id']
-    await TaskValidation(pool).user_task_belonging(task_id, user_id)
-    await TasksCRUD(pool).update_task(task_id, updates)
+    if task := await TasksCRUD(pool).select_one_task_by_id(task_id, user_id):
+        updates = TaskValidation().task_update_params(task, updates)
+        await TasksCRUD(pool).update_task(task_id, updates)
+        await TasksCRUD(pool).update_audit(task_id, user_id, updates)
+    else:
+        raise HTTPException(detail="task doesn't belong to user", status_code=403)
     return JSONResponse(content={'result': 'task updated'}, status_code=201)
