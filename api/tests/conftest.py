@@ -30,6 +30,7 @@ def main():
     path_to_sql = Path(__file__).parent.absolute().joinpath('initdb.sql')
     sql_file = open(path_to_sql)
     connection = asyncio.get_event_loop().run_until_complete(asyncpg.connect(host='localhost', database='anna_test_db', user='anna_test_user', password='123456'))
+    asyncio.get_event_loop().run_until_complete(connection.execute('''DROP SCHEMA public CASCADE; CREATE SCHEMA public;'''))
     asyncio.get_event_loop().run_until_complete(connection.execute(sql_file.read()))
     yield
     asyncio.get_event_loop().run_until_complete(connection.execute('''DROP SCHEMA public CASCADE; CREATE SCHEMA public;'''))

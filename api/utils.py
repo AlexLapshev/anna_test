@@ -39,8 +39,11 @@ class TaskValidation:
         params_to_update = {}
         if task['task_status'] != updates.task_status:
             params_to_update['task_status'] = updates.task_status
-        if task['task_finish'].strftime("%Y-%m-%d %H:%M") != updates.task_finish.strftime("%Y-%m-%d %H:%M"):
-            params_to_update['task_finish'] = updates.task_finish.strftime("%Y-%m-%d %H:%M")
+        if updates.task_finish:
+            if task['task_finish'].strftime("%Y-%m-%d %H:%M") != updates.task_finish.strftime("%Y-%m-%d %H:%M"):
+                params_to_update['task_finish'] = updates.task_finish.strftime("%Y-%m-%d %H:%M")
+        else:
+            params_to_update['task_finish'] = None
         if task['task_name'] != updates.task_name:
             params_to_update['task_name'] = updates.task_name
         if task['task_description'] != updates.task_description:
@@ -62,9 +65,11 @@ async def common_parameters(date: Optional[date] = None, status: Optional[str] =
 
 
 async def change_parameters(task_operation: Optional[str] = None) -> dict or None:
-    logger.debug('validating change parameter')
+    logger.debug('validating filter parameter')
+    logger.debug(f'task operation: {task_operation}')
     if task_operation:
         task_operation = task_operation.lower()
+
         if task_operation not in CHANGE_OPERATIONS:
             raise HTTPException(detail='incorrect query parameter task_operation', status_code=400)
         return task_operation

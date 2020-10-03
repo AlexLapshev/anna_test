@@ -5,7 +5,7 @@ from datetime import datetime
 from fastapi import HTTPException
 
 
-from api.api_types import TaskChange, BaseTask
+from api.api_types import BaseTask
 from api.database.database_transactions import DatabaseTransactions
 
 
@@ -30,19 +30,11 @@ class TasksCRUD:
     async def select_all_tasks(self, order: str, user_id: int) -> list:
         logger.debug('selecting all task')
         return await DatabaseTransactions(self.pool).select_multiple('''
-        select task_name, task_description, task_finish, task_id, task_created, user_id, task_status
-            from tasks
-            where user_id = {} 
-            order by task_created {};
-        ''', user_id, order)
+        select * from tasks where user_id = {} order by task_created {};''', user_id, order)
 
     async def select_tasks_with_queries(self, status: str, date: datetime, order: str, user_id: int) -> list:
         logger.debug('user_id: ', user_id)
-        main_query = '''
-            select task_name, task_description, task_finish, task_id, task_created, user_id, task_status
-            from tasks
-            where user_id = {} and 
-            '''
+        main_query = '''select * from tasks where user_id = {} and '''
         if date and status:
             logger.debug('selecting tasks filtered by date and status')
             return await DatabaseTransactions(self.pool).select_multiple(main_query + '''
@@ -62,7 +54,7 @@ class TasksCRUD:
             order by task_finish {};
             ''', user_id, date, order)
 
-    async def create_task(self, user_id: int, task: BaseTask) -> None:
+    async def insert_task(self, user_id: int, task: BaseTask) -> None:
         base_query = "insert into tasks (task_name, task_description, task_created, task_finish, task_status, user_id) "
         logger.debug(f'creating task with name: {task.task_name}')
         if await self.select_one_task_by_name(task.task_name, user_id):
@@ -105,12 +97,18 @@ class TasksCRUD:
             values ({}, {}, '{}', '{}', '{}');
             ''', task_id, user_id, date_change, k, str(v))
 
-    async def task_changes(self, task_id):
+
+class AuditCRUD:
+    """Операции над историей изменения пользовательской информации"""
+    def __init__(self, pool):
+        self.pool = pool
+
+    async def select_task_changes(self, task_id):
         return await DatabaseTransactions(self.pool).select_multiple('''
         select * from tasks_audit where task_id = {};
         ''', task_id)
 
-    async def task_changes_with_query(self, task_id: int, operation: str):
+    async def select_task_changes_with_query(self, task_id: int, operation: str):
         logger.debug(f'filtering with query {operation}')
         return await DatabaseTransactions(self.pool).select_multiple('''
         select * from tasks_audit where task_id = {} and task_operation = '{}';

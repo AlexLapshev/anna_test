@@ -8,7 +8,7 @@ from typing import List
 from api.api_types import Task, BaseTask, TaskChange, TaskOperation
 from api.auth.auth import get_current_user
 from api.database.database_connection import get_connection
-from api.database.tasks_transactions import TasksCRUD
+from api.database.tasks_transactions import TasksCRUD, AuditCRUD
 from api.utils import TaskValidation, common_parameters, change_parameters
 
 tasks = APIRouter()
@@ -33,11 +33,11 @@ async def user_tasks(common_params: dict = Depends(common_parameters), pool: Poo
 async def create_task(task: BaseTask, pool: Pool = Depends(get_connection),
                       current_user: dict = Depends(get_current_user)):
     user_id = current_user['user_id']
-    await TasksCRUD(pool).create_task(user_id, task)
+    await TasksCRUD(pool).insert_task(user_id, task)
     return JSONResponse(content={'result': 'task created'}, status_code=201)
 
 
-@tasks.put('/{task_id}/change')
+@tasks.put('/{task_id}')
 async def change_task(task_id: int, updates: TaskChange, pool: Pool = Depends(get_connection),
                       current_user: dict = Depends(get_current_user)):
     user_id = current_user['user_id']
@@ -53,14 +53,18 @@ async def change_task(task_id: int, updates: TaskChange, pool: Pool = Depends(ge
     return JSONResponse(content={'result': 'task updated'}, status_code=201)
 
 
-@tasks.get('/{task_id}/change', response_model=List[TaskOperation])
+@tasks.get('/{task_id}/changes', response_model=List[TaskOperation])
 async def task_changes(task_id: int, task_operation: str = Depends(change_parameters),
                        current_user: dict = Depends(get_current_user), pool: Pool = Depends(get_connection)):
     user_id = current_user['user_id']
     if task := await TasksCRUD(pool).select_one_task_by_id(task_id, user_id):
         if task_operation:
-            return await TasksCRUD(pool).task_changes_with_query(task_id, task_operation)
+            tasks_filtered = await AuditCRUD(pool).select_task_changes_with_query(task_id, task_operation)
         else:
-            return await TasksCRUD(pool).task_changes(task_id)
+            tasks_filtered = await AuditCRUD(pool).select_task_changes(task_id)
+        if tasks_filtered:
+            return tasks_filtered
+        else:
+            return JSONResponse(status_code=204, content={'detail': 'no tasks found'})
     else:
         raise HTTPException(detail="task doesn't belong to user", status_code=403)
