@@ -1,4 +1,5 @@
 import asyncpg
+import os
 import uvicorn
 
 
@@ -7,6 +8,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.auth.token import token
 from api.tasks import tasks
+
+
+if os.getenv('DEBUG') == 'True':
+    reload = True
+    postgres_url = "postgres://anna_test_user:123456@0.0.0.0:5432/anna_test_db"
+else:
+    reload = False
+    postgres_url = "postgres://anna_test_user:123456@db:5432/anna_test_db"
 
 
 def create_app():
@@ -32,7 +41,7 @@ def create_app():
 
 def create_startup_hook(app: FastAPI):
     async def startup_hook() -> None:
-        app.state.pool = await asyncpg.create_pool(dsn="postgres://anna_test_user:123456@db:5432/anna_test_db")
+        app.state.pool = await asyncpg.create_pool(dsn=postgres_url)
     return startup_hook
 
 
@@ -40,4 +49,4 @@ app = create_app()
 
 
 if __name__ == "__main__":
-    uvicorn.run('api.main:app', host="0.0.0.0", port=1984, reload=True, workers=4)
+    uvicorn.run('api.main:app', host="0.0.0.0", port=1984, reload=reload, workers=4)

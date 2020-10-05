@@ -1,27 +1,29 @@
 version: "3.3"
 services:
   db:
-    image: postgres:latest
+    image: alexlapshev/anna_test_db:1.0
     container_name: anna_test_db
+    restart: always
     environment:
       POSTGRES_DB: anna_test_db
       POSTGRES_USER: anna_test_user
       POSTGRES_PASSWORD: 123456
     volumes:
-      - ./initdb.sql:/docker-entrypoint-initdb.d/dump.sql:ro
       - ./postgres/pgdata:/var/lib/postgresql/data
     ports:
       - 5432:5432
   app:
-    image: alexlapshev/anna_test:latest
-    container_name: app
+    image: alexlapshev/anna_test_app:1.0
+    container_name: anna_test_app
+    restart: always
+    environment:
+      SENDER_EMAIL:
+      SENDER_PASSWORD: 
+      DEBUG: 'False'
     ports:
-      - "1984:1984"
+      - 1984:1984
     command: bash -c "python -m api.main"
     depends_on:
       - db
 volumes:
   pgdata:
-
-
-

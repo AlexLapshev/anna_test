@@ -1,12 +1,11 @@
 from asyncpg.pool import Pool
 from fastapi import APIRouter, Depends, HTTPException
-from loguru import logger
 from starlette.responses import JSONResponse
 from typing import List
 
 
 from api.api_types import Task, BaseTask, TaskChange, TaskOperation
-from api.auth.auth import get_current_user
+from api.auth.auth import get_current_active_user
 from api.database.database_connection import get_connection
 from api.database.tasks_transactions import TasksCRUD, AuditCRUD
 from api.utils import TaskValidation, common_parameters, change_parameters
@@ -16,7 +15,7 @@ tasks = APIRouter()
 
 @tasks.get('', response_model=List[Task])
 async def user_tasks(common_params: dict = Depends(common_parameters), pool: Pool = Depends(get_connection),
-                     current_user: dict = Depends(get_current_user)):
+                     current_user: dict = Depends(get_current_active_user)):
     user_id = current_user['user_id']
     if common_params['status'] or common_params['date']:
         user_t = await TasksCRUD(pool).select_tasks_with_queries(common_params['status'], common_params['date'],
@@ -31,7 +30,7 @@ async def user_tasks(common_params: dict = Depends(common_parameters), pool: Poo
 
 @tasks.post('')
 async def create_task(task: BaseTask, pool: Pool = Depends(get_connection),
-                      current_user: dict = Depends(get_current_user)):
+                      current_user: dict = Depends(get_current_active_user)):
     user_id = current_user['user_id']
     await TasksCRUD(pool).insert_task(user_id, task)
     return JSONResponse(content={'result': 'task created'}, status_code=201)
@@ -39,7 +38,7 @@ async def create_task(task: BaseTask, pool: Pool = Depends(get_connection),
 
 @tasks.put('/{task_id}')
 async def change_task(task_id: int, updates: TaskChange, pool: Pool = Depends(get_connection),
-                      current_user: dict = Depends(get_current_user)):
+                      current_user: dict = Depends(get_current_active_user)):
     user_id = current_user['user_id']
     if task := await TasksCRUD(pool).select_one_task_by_id(task_id, user_id):
         if updates := TaskValidation().task_update_params(task, updates):
@@ -55,7 +54,7 @@ async def change_task(task_id: int, updates: TaskChange, pool: Pool = Depends(ge
 
 @tasks.get('/{task_id}/changes', response_model=List[TaskOperation])
 async def task_changes(task_id: int, task_operation: str = Depends(change_parameters),
-                       current_user: dict = Depends(get_current_user), pool: Pool = Depends(get_connection)):
+                       current_user: dict = Depends(get_current_active_user), pool: Pool = Depends(get_connection)):
     user_id = current_user['user_id']
     if task := await TasksCRUD(pool).select_one_task_by_id(task_id, user_id):
         if task_operation:

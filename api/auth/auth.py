@@ -1,5 +1,6 @@
 from asyncpg.pool import Pool
 from jose import JWTError, ExpiredSignatureError
+from loguru import logger
 from passlib.context import CryptContext
 
 
@@ -55,3 +56,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme), pool: Pool = Dep
     if user is None:
         raise credentials_exception
     return user
+
+
+async def get_current_active_user(current_user: dict = Depends(get_current_user)) -> dict:
+    logger.debug('checking confirmed user')
+    if not current_user.get('confirmed'):
+        raise HTTPException(status_code=400, detail="user email is not confirmed")
+    return current_user
