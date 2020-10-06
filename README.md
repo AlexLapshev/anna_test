@@ -10,17 +10,31 @@ To run the app locally in **"debug-mode"** you should set environment variable _
 to send email with confirm link you need to set _SENDER_EMAIL_ and _SENDER_PASSWORD_ environment variables.
 
 Then you need to pull database image from dockerhub:
-_docker pull alexlapshev/anna_test_db:1.0_.
 
-And finally just _python -m api.main_.
+_docker pull alexlapshev/anna_test_db:1.0_
+
+Then run it:
+
+_docker run -p 5432:5432 alexlapshev/anna_test_db:1.0_
+
+And finally just
+ 
+ _python -m api.main_
 
 To run the app in **"production-mode"** you need to set _SENDER_EMAIL_ and _SENDER_PASSWORD_ environment variables in docker-compose.yaml
-and then just run _docker-compose up_ . 
+and then just run
+ 
+ _docker-compose up_  
 
 <h2>Tests</h2>
 
 To run tests you need to run docker image with database:
+
 _docker run -p 5432:5432 alexlapshev/anna_test_db:1.0_ 
+
+And then run:
+
+_python -m pytest api/tests_
 
 <h2>Requires</h2>
 python => 3.8

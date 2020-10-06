@@ -6,20 +6,10 @@ from fastapi import HTTPException
 from loguru import logger
 
 from api.api_types import TaskChange, STATUSES
-from api.database.database_transactions import DatabaseTransactions
 from api.database.tasks_transactions import TasksCRUD
 
 ORDER = ['asc', 'desc']
 CHANGE_OPERATIONS = ['task_status', 'task_finish', 'task_name', 'task_description']
-
-
-class StatusCRUD:
-    def __init__(self, pool: Pool):
-        self.pool = pool
-
-    async def all_statuses(self):
-        return await DatabaseTransactions(self.pool).select_multiple('''
-        select status_name from ''')
 
 
 class TaskValidation:
